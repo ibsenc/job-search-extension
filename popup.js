@@ -88,7 +88,8 @@ const draftBanner     = document.getElementById('draft-banner');
 const draftBannerText = document.getElementById('draft-banner-text');
 const clearDraftBtn   = document.getElementById('clear-draft-btn');
 
-const DRAFT_KEY = 'formDraft';
+const DRAFT_KEY      = 'formDraft';
+const EDIT_DRAFT_KEY = 'editDraft';
 
 function readDraft(callback) {
   chrome.storage.local.get([DRAFT_KEY], r => callback(r[DRAFT_KEY] || null));
@@ -116,6 +117,32 @@ function saveDraft() {
 
 function clearDraft() {
   chrome.storage.local.remove(DRAFT_KEY);
+}
+
+function saveEditDraft() {
+  if (!editingJobId) return;
+  chrome.storage.local.set({
+    [EDIT_DRAFT_KEY]: {
+      jobId:        editingJobId,
+      title:        mFields.title.value,
+      company:      mFields.company.value,
+      foundOn:      mFields.foundOn.value,
+      location:     mFields.location.value,
+      salary:       mFields.salary.value,
+      datePosted:   mFields.datePosted.value,
+      link:         mFields.link.value,
+      jobBoardLink: mFields.jobBoardLink.value,
+      appliedVia:   mFields.appliedVia.value,
+      status:       mFields.status.value,
+      statusDate:   mFields.statusDate.value,
+      notes:        mFields.notes.value,
+      coverLetter:  mFields.coverLetter.checked,
+    }
+  });
+}
+
+function clearEditDraft() {
+  chrome.storage.local.remove(EDIT_DRAFT_KEY);
 }
 
 function restoreDraft(draft) {
@@ -159,6 +186,12 @@ function prefillFromTab(tab) {
 Object.values(fields).forEach(el => {
   el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', saveDraft);
   if (el.tagName === 'SELECT') el.addEventListener('change', saveDraft);
+});
+
+// Save edit draft on any modal field change
+Object.values(mFields).forEach(el => {
+  el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', saveEditDraft);
+  if (el.tagName === 'SELECT') el.addEventListener('change', saveEditDraft);
 });
 
 // On clear draft: wipe storage and re-run tab pre-fill
@@ -264,6 +297,7 @@ function openEditModal(job) {
 function closeEditModal() {
   editModal.style.display = 'none';
   editingJobId = null;
+  clearEditDraft();
 }
 
 modalClose.addEventListener('click', closeEditModal);
@@ -351,10 +385,36 @@ document.getElementById('export-btn').addEventListener('click', () => {
 });
 
 // --- Display saved jobs ---
+let editDraftChecked = false;
+
 function loadJobs() {
   chrome.runtime.sendMessage({ action: 'getJobs' }, ({ jobs }) => {
     allJobs = jobs || [];
     renderJobs();
+    if (!editDraftChecked) {
+      editDraftChecked = true;
+      chrome.storage.local.get([EDIT_DRAFT_KEY], (r) => {
+        const d = r[EDIT_DRAFT_KEY];
+        if (!d) return;
+        const job = allJobs.find(j => j.id === d.jobId);
+        if (!job) { clearEditDraft(); return; }
+        openEditModal(job);
+        // Overwrite modal fields with the saved draft values
+        mFields.title.value         = d.title        ?? mFields.title.value;
+        mFields.company.value       = d.company      ?? mFields.company.value;
+        mFields.foundOn.value       = d.foundOn      ?? mFields.foundOn.value;
+        mFields.location.value      = d.location     ?? mFields.location.value;
+        mFields.salary.value        = d.salary       ?? mFields.salary.value;
+        mFields.datePosted.value    = d.datePosted   ?? mFields.datePosted.value;
+        mFields.link.value          = d.link         ?? mFields.link.value;
+        mFields.jobBoardLink.value  = d.jobBoardLink ?? mFields.jobBoardLink.value;
+        mFields.appliedVia.value    = d.appliedVia   ?? mFields.appliedVia.value;
+        mFields.status.value        = d.status       ?? mFields.status.value;
+        mFields.statusDate.value    = d.statusDate   ?? mFields.statusDate.value;
+        mFields.notes.value         = d.notes        ?? mFields.notes.value;
+        mFields.coverLetter.checked = d.coverLetter  ?? mFields.coverLetter.checked;
+      });
+    }
   });
 }
 
