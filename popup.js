@@ -165,6 +165,14 @@ Object.values(fields).forEach(el => {
 clearDraftBtn.addEventListener('click', () => {
   clearDraft();
   draftBanner.style.display = 'none';
+  // Reset fields not covered by prefillFromTab
+  fields.appliedVia.value   = '';
+  fields.location.value     = '';
+  fields.salary.value       = '';
+  fields.datePosted.value   = '';
+  fields.jobBoardLink.value = '';
+  fields.notes.value        = '';
+  fields.coverLetter.checked = false;
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs && tabs[0];
     if (tab) prefillFromTab(tab);
