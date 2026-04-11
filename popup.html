@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 360px; font-family: system-ui, sans-serif; padding: 14px; background: #f9f9f9; }
+    h2 { font-size: 15px; margin-bottom: 10px; color: #1a1a1a; }
+
+    /* Form */
+    #job-form { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+    .form-row { margin-bottom: 7px; }
+    .form-row label { display: block; font-size: 11px; color: #555; margin-bottom: 2px; }
+    .form-row input, .form-row select, .form-row textarea {
+      width: 100%; padding: 5px 7px; border: 1px solid #ccc; border-radius: 4px;
+      font-size: 13px; font-family: inherit; background: #fafafa;
+    }
+    .form-row textarea { resize: vertical; min-height: 48px; }
+    .form-row.inline { display: flex; align-items: center; gap: 8px; }
+    .form-row.inline label { margin: 0; font-size: 13px; color: #333; }
+    .form-row.inline input[type=checkbox] { width: auto; }
+    .form-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    #save-btn {
+      width: 100%; padding: 9px; background: #1a73e8; color: white;
+      border: none; border-radius: 6px; font-size: 14px; cursor: pointer;
+    }
+    #save-btn:hover { background: #1558b0; }
+    #save-applied-btn { background: #2e7d32; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; padding: 9px; }
+    #save-applied-btn:hover { background: #1b5e20; }
+    #status-msg { font-size: 12px; color: #4caf50; margin-top: 6px; min-height: 16px; }
+    #jobs-list { margin-top: 12px; max-height: 340px; overflow-y: auto; }
+
+    /* Cards */
+    .job-card {
+      background: white; border: 1px solid #ddd; border-radius: 6px;
+      padding: 9px 11px; margin-bottom: 7px; font-size: 13px;
+    }
+    .job-title { font-weight: 600; color: #111; }
+    .job-company { color: #555; margin-top: 2px; }
+    .job-detail { font-size: 11px; color: #777; margin-top: 3px; }
+    .job-detail span { display: block; margin-bottom: 1px; }
+    .job-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; font-size: 11px; color: #888; }
+    .job-status { font-weight: 500; }
+    .job-status.status-saved     { color: #1a73e8; }
+    .job-status.status-applied   { color: #2e7d32; }
+    .job-status.status-interview { color: #000; }
+    .job-status.status-offer     { color: #000; }
+    .job-status.status-rejected  { color: #c62828; }
+    .job-status.status-withdrawn { color: #888; }
+    .job-status.status-ghosted   { color: #888; }
+    .job-status.status-other     { color: #000; }
+    .job-notes { font-size: 11px; color: #888; margin-top: 4px; font-style: italic; }
+    .empty { color: #999; font-size: 13px; text-align: center; padding: 20px 0; }
+    .card-actions { margin-top: 7px; }
+    .card-edit-btn { font-size: 11px; background: #e8f0fe; color: #1a73e8; border: none; border-radius: 4px; padding: 3px 10px; cursor: pointer; }
+    .card-edit-btn:hover { background: #d2e3fc; }
+    .meta-label { color: #999; }
+    #m-status-history { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; }
+    .history-label { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+    .history-row { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; }
+    .history-date { color: #888; }
+    .history-status { color: #444; font-weight: 500; }
+
+    /* Search / Sort / Filter controls */
+    #jobs-controls { margin-top: 10px; }
+    #search-input { width: 100%; padding: 6px 9px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; font-family: inherit; background: white; margin-bottom: 5px; }
+    #search-input:focus { outline: none; border-color: #1a73e8; }
+    .controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 5px; }
+    .controls-row select { padding: 5px 6px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; font-family: inherit; background: white; cursor: pointer; width: 100%; }
+    #results-bar { display: flex; justify-content: space-between; align-items: center; min-height: 16px; margin-bottom: 4px; }
+    #results-count { font-size: 11px; color: #999; }
+    #clear-filters { font-size: 11px; color: #1a73e8; background: none; border: none; cursor: pointer; padding: 0; }
+    #clear-filters:hover { text-decoration: underline; }
+    #clear-filters.hidden { visibility: hidden; }
+
+    /* Edit Modal */
+    #edit-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; }
+    #modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); }
+    #modal-box { position: relative; background: white; border-radius: 8px; padding: 12px 14px 14px; width: 332px; max-height: calc(100vh - 20px); overflow-y: auto; z-index: 1; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+    #modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    #modal-header span { font-size: 14px; font-weight: 600; }
+    #modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; line-height: 1; padding: 0 2px; }
+    #modal-close:hover { color: #111; }
+    #modal-save-btn { width: 100%; padding: 8px; background: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 10px; }
+    #modal-save-btn:hover { background: #1558b0; }
+    #modal-delete-btn { width: 100%; padding: 7px; background: white; color: #c62828; border: 1px solid #e57373; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 6px; }
+    #modal-delete-btn:hover { background: #ffebee; }
+  </style>
+</head>
+<body>
+  <h2>Job Search Tracker</h2>
+
+  <div id="job-form">
+    <div class="form-two-col">
+      <div class="form-row">
+        <label for="f-title">Job Title</label>
+        <input id="f-title" type="text" placeholder="e.g. Software Engineer">
+      </div>
+      <div class="form-row">
+        <label for="f-company">Company</label>
+        <input id="f-company" type="text" placeholder="e.g. Acme Corp">
+      </div>
+    </div>
+    <div class="form-two-col">
+      <div class="form-row">
+        <label for="f-found-on">Found On</label>
+        <select id="f-found-on">
+          <option value="">&mdash; select &mdash;</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Indeed">Indeed</option>
+          <option value="Glassdoor">Glassdoor</option>
+          <option value="Handshake">Handshake</option>
+          <option value="ZipRecruiter">ZipRecruiter</option>
+          <option value="Monster">Monster</option>
+          <option value="Wellfound">Wellfound</option>
+          <option value="Dice">Dice</option>
+          <option value="Company website">Company website</option>
+          <option value="Referral">Referral</option>
+          <option value="Recruiter">Recruiter</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="f-location">Location</label>
+        <input id="f-location" type="text" placeholder="e.g. Remote, NYC">
+      </div>
+    </div>
+    <div class="form-two-col">
+      <div class="form-row">
+        <label for="f-salary">Salary</label>
+        <input id="f-salary" type="text" placeholder="e.g. $90k–$110k">
+      </div>
+      <div class="form-row">
+        <label for="f-date-posted">Date of Posting</label>
+        <input id="f-date-posted" type="date">
+      </div>
+    </div>
+    <div class="form-row">
+      <label for="f-link">Job Listing Link</label>
+      <input id="f-link" type="url" placeholder="https://...">
+    </div>
+    <div class="form-row">
+      <label for="f-job-board-link">Job Board Link</label>
+      <input id="f-job-board-link" type="url" placeholder="e.g. LinkedIn/Indeed posting URL">
+    </div>
+    <div class="form-two-col">
+      <div class="form-row">
+        <label for="f-applied-via">Applied Via</label>
+        <select id="f-applied-via">
+          <option value="">— select —</option>
+          <option value="Company website">Company website</option>
+          <option value="Job board">Job board</option>
+          <option value="Referral">Referral</option>
+          <option value="Recruiter">Recruiter</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="f-status-date">Date</label>
+        <input id="f-status-date" type="date">
+      </div>
+    </div>
+    <div class="form-row">
+      <label for="f-notes">Notes</label>
+      <textarea id="f-notes" placeholder="Any notes..."></textarea>
+    </div>
+    <div class="form-row inline">
+      <input id="f-cover-letter" type="checkbox">
+      <label for="f-cover-letter">Cover letter submitted</label>
+    </div>
+  </div>
+  <div id="draft-banner" style="display:none; align-items:center; justify-content:space-between; background:#fff8e1; border:1px solid #ffe082; border-radius:6px; padding:6px 10px; margin-bottom:6px; font-size:12px; color:#795548;">
+    <span id="draft-banner-text">&#128393; Draft restored</span>
+    <button id="clear-draft-btn" style="background:none; border:none; color:#e65100; font-size:12px; cursor:pointer; padding:0;">Clear draft</button>
+  </div>
+  <div style="display:flex; gap:6px;">
+    <button id="save-btn" style="flex:1;">Save Job</button>
+    <button id="save-applied-btn" style="flex:1; background:#2e7d32;">Save &amp; Mark Applied</button>
+  </div>
+  <div id="status-msg"></div>
+  <div style="margin-top:6px;">
+    <button id="export-btn" style="width:100%; padding:7px; background:white; color:#555; border:1px solid #ccc; border-radius:6px; font-size:13px; cursor:pointer;">Export All as CSV</button>
+  </div>
+  <div id="jobs-controls">
+    <input id="search-input" type="text" placeholder="Search jobs...">
+    <div class="controls-row">
+      <select id="sort-select">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="status">Status A–Z</option>
+        <option value="company">Company A–Z</option>
+        <option value="active">Active statuses first</option>
+      </select>
+      <select id="filter-status">
+        <option value="">All statuses</option>
+        <option value="__active">Active statuses only</option>
+        <option value="Saved">Saved</option>
+        <option value="Applied">Applied</option>
+        <option value="Interview">Interview</option>
+        <option value="Offer">Offer</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Withdrawn">Withdrawn</option>
+        <option value="Ghosted/Listing Removed">Ghosted</option>
+      </select>
+    </div>
+    <div class="controls-row">
+      <select id="filter-site">
+        <option value="">All sources</option>
+        <option value="LinkedIn">LinkedIn</option>
+        <option value="Indeed">Indeed</option>
+        <option value="Glassdoor">Glassdoor</option>
+        <option value="Handshake">Handshake</option>
+        <option value="ZipRecruiter">ZipRecruiter</option>
+        <option value="Monster">Monster</option>
+        <option value="Wellfound">Wellfound</option>
+        <option value="Dice">Dice</option>
+        <option value="Company website">Company website</option>
+        <option value="Referral">Referral</option>
+        <option value="Recruiter">Recruiter</option>
+        <option value="Other">Other</option>
+      </select>
+      <select id="filter-applied-via">
+        <option value="">All applied via</option>
+        <option value="Company website">Company website</option>
+        <option value="Job board">Job board</option>
+        <option value="Referral">Referral</option>
+        <option value="Recruiter">Recruiter</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div id="results-bar">
+      <span id="results-count"></span>
+      <button id="clear-filters" class="hidden">Clear filters</button>
+    </div>
+  </div>
+  <div id="jobs-list"></div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal" style="display:none;">
+    <div id="modal-overlay"></div>
+    <div id="modal-box">
+      <div id="modal-header">
+        <span>Edit Job</span>
+        <button id="modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="form-two-col">
+        <div class="form-row">
+          <label for="m-title">Job Title</label>
+          <input id="m-title" type="text">
+        </div>
+        <div class="form-row">
+          <label for="m-company">Company</label>
+          <input id="m-company" type="text">
+        </div>
+      </div>
+      <div class="form-two-col">
+        <div class="form-row">
+          <label for="m-found-on">Found On</label>
+          <select id="m-found-on">
+            <option value="">&mdash; select &mdash;</option>
+            <option value="LinkedIn">LinkedIn</option>
+            <option value="Indeed">Indeed</option>
+            <option value="Glassdoor">Glassdoor</option>
+            <option value="Handshake">Handshake</option>
+            <option value="ZipRecruiter">ZipRecruiter</option>
+            <option value="Monster">Monster</option>
+            <option value="Wellfound">Wellfound</option>
+            <option value="Dice">Dice</option>
+            <option value="Company website">Company website</option>
+            <option value="Referral">Referral</option>
+            <option value="Recruiter">Recruiter</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="m-location">Location</label>
+          <input id="m-location" type="text">
+        </div>
+      </div>
+      <div class="form-two-col">
+        <div class="form-row">
+          <label for="m-salary">Salary</label>
+          <input id="m-salary" type="text">
+        </div>
+        <div class="form-row">
+          <label for="m-date-posted">Date of Posting</label>
+          <input id="m-date-posted" type="date">
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="m-link">Job Listing Link</label>
+        <input id="m-link" type="url">
+      </div>
+      <div class="form-row">
+        <label for="m-job-board-link">Job Board Link</label>
+        <input id="m-job-board-link" type="url">
+      </div>
+      <div class="form-two-col">
+        <div class="form-row">
+          <label for="m-applied-via">Applied Via</label>
+          <select id="m-applied-via">
+            <option value="">&mdash; select &mdash;</option>
+            <option value="Company website">Company website</option>
+            <option value="Job board">Job board</option>
+            <option value="Referral">Referral</option>
+            <option value="Recruiter">Recruiter</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="m-status">Status</label>
+          <select id="m-status">
+            <option value="Saved">Saved</option>
+            <option value="Applied">Applied</option>
+            <option value="Interview">Interview</option>
+            <option value="Offer">Offer</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Withdrawn">Withdrawn</option>
+            <option value="Ghosted/Listing Removed">Ghosted/Listing Removed</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-two-col">
+        <div class="form-row">
+          <label for="m-status-date">Status Date</label>
+          <input id="m-status-date" type="date">
+        </div>
+      </div>
+      <div id="m-status-history"></div>
+      <div class="form-row">
+        <label for="m-notes">Notes</label>
+        <textarea id="m-notes"></textarea>
+      </div>
+      <div class="form-row inline">
+        <input id="m-cover-letter" type="checkbox">
+        <label for="m-cover-letter">Cover letter submitted</label>
+      </div>
+      <button id="modal-save-btn">Save Changes</button>
+      <button id="modal-delete-btn">Delete Entry</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
