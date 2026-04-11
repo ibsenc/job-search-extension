@@ -1,5 +1,7 @@
 # Job Search Tracker
 
+![](./images/job-search-tracker-main.png)
+
 A Chrome extension (Manifest V3) that helps you track job applications, monitor/update their status, and automatically detects responses from employers in your email.
 
 Supports both manual entry and automatic webpage scraping. All data is stored locally on your device and can be exported as a CSV.
@@ -11,7 +13,10 @@ Generated using GitHub Copilot, model Claude Sonnet 4.6.
 ## Features
 
 ### Job Form
-Fill in details about a job before saving:
+
+<img src="./images/input-form.png" width="360">
+
+Information from the job listing page will be scraped and autofilled. Modify and complete the form with the following data before saving:
 - **Job Title** and **Company**
 - **Found On** — job board or source (LinkedIn, Indeed, Glassdoor, Handshake, ZipRecruiter, Monster, Wellfound, Dice, Company website, Referral, Recruiter, Other)
 - **Location** — e.g. "Remote" or "New York, NY"
@@ -63,9 +68,14 @@ The extension watches your webmail and automatically updates job statuses when y
 All saved jobs appear in a scrollable list below the form. Click **Edit** on any card to open the edit modal.
 
 ### Editing & Deleting
+
+<img src="./images/edit-saved-job-form.png" width="360">
+
 The edit modal lets you update any field. If you change the status, the new status and date are appended to the status history. The modal also shows the full **status history timeline** for the job. You can **delete** an entry permanently from the modal.
 
 ### Search, Filter & Sort
+
+<img src="./images/sort-and-filter.png" width="360">
 
 **Search** — full-text search across title, company, location, notes, and status history.
 
@@ -86,6 +96,9 @@ The edit modal lets you update any field. If you change the status, the new stat
 - **Active statuses first** — Offer → Interview → Applied → Saved → Ghosted → Rejected → Withdrawn, then by most recent date within each group
 
 ### CSV Export
+
+<img src="./images/csv-download.png" width="500">
+
 Click **Export All as CSV** to download all jobs as a `.csv` file with columns:
 - Title, Company, Status, Latest Status Date, Found On, Location, Salary, Date Posted, Applied Via, Job Listing URL, Job Board URL, Cover Letter, Notes, Full Status History
 
