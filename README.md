@@ -138,8 +138,7 @@ On other sites, a generic scraper tries common `h1`/`h2` and heading selectors. 
 |---|---|
 | `storage` | Saves and reads your job list and draft |
 | `activeTab` | Reads the current tab's URL and title for auto-fill |
-| `scripting` | Sends messages to the content script for page scraping |
-| `tabs` | Accesses tab metadata for prefill |
+| `tabs` | Accesses tab metadata for prefill and sends messages to the content script for page scraping |
 | `<all_urls>` | Runs the content script on job listing pages for scraping and apply-button detection |
 | `https://mail.google.com/*` etc. | Runs the email monitor on webmail providers |
 

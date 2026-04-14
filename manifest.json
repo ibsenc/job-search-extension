@@ -4,7 +4,7 @@
   "version": "1.0.1",
   "description": "Tracks job applications automatically and monitors email responses.",
 
-  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "permissions": ["storage", "activeTab", "tabs"],
   "host_permissions": [
     "<all_urls>",
     "https://mail.google.com/*"
