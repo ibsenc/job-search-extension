@@ -8,6 +8,38 @@ Supports both manual entry and automatic webpage scraping. All data is stored lo
 
 Generated using GitHub Copilot, model Claude Sonnet 4.6.
 
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## Installation
+
+### Chrome Web Store
+
+The extension is available in the Chrome Web Store: [Job Search Tracker](https://chromewebstore.google.com/detail/job-search-tracker/cppongldgadjjnnelfhghekknpbhfnkk)
+
+### Local Development
+
+1. Clone this repository.
+2. Open Chrome and go to `chrome://extensions`.
+3. Enable **Developer mode** (top right).
+4. Click **Load unpacked** and select the project folder.
+5. The extension icon will appear in your toolbar. Pin it and start using the tool!
+
+If you're setting up to contribute, see [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
+
+---
+
+## Usage
+
+1. **Navigate to a job listing** on a job board site (LinkedIn, Indeed, Glassdoor, etc.) or a company's website.
+2. **Open the extension popup** — the form auto-fills with the job title, company, URL, and source from the page.
+3. **Review and complete the form**, then click **Save Job** (to bookmark) or **Save & Mark Applied** (to record an application).
+4. **Or just apply directly** — on most sites, clicking the native "Apply" button automatically saves the job with status `Applied`, no popup needed. Review and edit the autopopulated fields if needed.
+5. **Track status changes** by clicking **Edit** on any saved job and updating the status — each change is appended to the job's history timeline.
+5. **Monitor your email** — open Gmail (or Yahoo/Outlook) emails and the extension will automatically detect interview, offer, or rejection emails and update the matching job's status.
+6. **Export your data** at any time using **Export All as CSV**.
+
 ---
 
 ## Features
@@ -122,16 +154,6 @@ On other sites, a generic scraper tries common `h1`/`h2` and heading selectors. 
 
 ---
 
-## Installation
-
-1. Clone or download this repository.
-2. Open Chrome and go to `chrome://extensions`.
-3. Enable **Developer mode** (top right).
-4. Click **Load unpacked** and select the project folder.
-5. The extension icon will appear in your toolbar.
-
----
-
 ## Permissions
 
 | Permission | Why |
@@ -189,3 +211,21 @@ Each job object looks like:
 
 ## References
 https://developer.chrome.com/docs/extensions/get-started
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## Contact
+
+Found a bug or have a feature request? [Open an issue](https://github.com/ibsenc/job-search-extension/issues).
+
+---
+
+## License
+
+[MIT](LICENSE)
