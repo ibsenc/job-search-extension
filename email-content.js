@@ -179,7 +179,7 @@ function checkOpenedEmails() {
     console.log(`[Job Tracker] Sending status update → ${status} for domain: ${domain}`);
 
     try {
-      chrome.runtime.sendMessage({ action: 'updateJobStatus', domain, status });
+      chrome.runtime.sendMessage({ action: 'updateJobStatus', domain, senderEmail, status });
     } catch (e) {
       observer.disconnect();
     }

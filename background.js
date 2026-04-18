@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     sendResponse({ success: true });
 
   } else if (message.action === 'updateJobStatus') {
-    updateJobByDomain(message.domain, message.status);
+    updateJobByDomain(message.domain, message.status, message.senderEmail);
     sendResponse({ success: true });
   }
 
@@ -63,52 +63,82 @@ function rootDomain(hostname) {
   return parts.length >= 2 ? parts.slice(-2).join('.') : hostname;
 }
 
+// Known ATS/recruiting platforms where the email sender domain doesn't include company name.
+const ATS_DOMAINS = new Set([
+  'myworkday.com', 'workdayjobs.com', 'greenhouse.io', 'lever.co',
+  'jobvite.com', 'icims.com', 'smartrecruiters.com', 'taleo.net',
+]);
+
+// Derives the brand from sender email address.
+// For ATS senders, the brand is the local-part (e.g. "zoom" from zoom@myworkday.com).
+// For normal senders, the brand is the first label of the root domain (e.g. "clever" from no-reply@clever.com).
+function getSenderBrand(domain, senderEmail) {
+  const senderRoot = rootDomain(domain);
+  const atsBrand = ATS_DOMAINS.has(senderRoot) && senderEmail
+    ? senderEmail.split('@')[0].toLowerCase()
+    : null;
+  return { brand: atsBrand ?? senderRoot.split('.')[0].toLowerCase(), isAts: !!atsBrand };
+}
+
+// Determines whether a saved job matches the sender of an email.
+// Returns a string describing how it matched, or null if no match.
+//
+// Two checks are run against the brand to find a matching saved job:
+//   1. Company name: job.company.toLowerCase().includes(brand)
+//   2. URL:
+//      - ATS:    job.url contains brand anywhere (e.g. "zoom.wd5.myworkdayjobs.com", "job-boards.greenhouse.io/seesaw/jobs/...")
+//      - Normal: job.url root domain === senderRoot (e.g. "clever.com" === "clever.com")
+function jobMatchesSender(job, domain, { brand, isAts }) {
+  // Check company name
+  if (job.company?.toLowerCase().includes(brand)) {
+    return 'company-name';
+  }
+
+  // Check URL
+  if (job.url) {
+    try {
+      if (isAts) {
+        if (job.url.toLowerCase().includes(brand)) return 'ats-url';
+      } else {
+        if (rootDomain(new URL(job.url).hostname) === rootDomain(domain)) return 'primary-domain';
+      }
+    } catch {}
+  }
+
+  return null;
+}
+
 // Called by email-content.js when a reply from a known company is detected.
-// Matches saved jobs whose URL root domain equals the sender's root domain,
-// or whose company name contains the sender's brand (e.g. "Google" ↔ "google.com").
-function updateJobByDomain(domain, status) {
+// Iterates all saved jobs, delegates matching to jobMatchesSender, and applies
+// the status transition if valid.
+function updateJobByDomain(domain, status, senderEmail) {
   chrome.storage.local.get(['jobs'], (result) => {
     const jobs = result.jobs || [];
     let changed = false;
     const today = new Date().toLocaleDateString('en-CA');
-    const senderRoot = rootDomain(domain);
+    const senderContext = getSenderBrand(domain, senderEmail);
+    console.log(`[Job Tracker] Attempting to find a job matching sender ${senderContext.brand}."`);
+
     jobs.forEach(job => {
-      let matches = false;
+      const matchStrategy = jobMatchesSender(job, domain, senderContext);
+      if (!matchStrategy) return;
 
-      // Primary: compare root domains extracted from job URL and sender address
-      if (job.url) {
-        try {
-          const jobRoot = rootDomain(new URL(job.url).hostname);
-          if (jobRoot === senderRoot) matches = true;
-        } catch {}
-      }
+      const current = job.status || 'Saved';
+      console.log(`[Job Tracker] Matched "${job.title}" at "${job.company}" via ${matchStrategy} — current status: "${current}", requested status: "${status}"`);
 
-      // Fallback: company name contains the sender's brand name
-      // (e.g. company "Google LLC" matches sender domain "google.com")
-      if (!matches && job.company) {
-        const brand = senderRoot.split('.')[0].toLowerCase();
-        if (job.company.toLowerCase().includes(brand)) matches = true;
+      const VALID_TRANSITIONS = {
+        'Rejected':  new Set(['Applied', 'Interview']),
+        'Interview': new Set(['Applied']),
+        'Offer':     new Set(['Interview']),
+      };
+      const allowed = VALID_TRANSITIONS[status];
+      if (!allowed || !allowed.has(current)) {
+        console.log(`[Job Tracker] Skipping — "${status}" not a valid transition from "${current}"`);
+        return;
       }
-
-      if (matches) {
-        // Only apply the status transition if it makes sense given the current status.
-        // This prevents redundant history entries and avoids regressing a job's status.
-        const current = job.status || 'Saved';
-        const VALID_TRANSITIONS = {
-          'Rejected':  new Set(['Applied', 'Interview']),
-          'Interview': new Set(['Applied']),
-          'Offer':     new Set(['Interview']),
-        };
-        const allowed = VALID_TRANSITIONS[status];
-        if (!allowed || !allowed.has(current)) {
-          console.log(`[Job Tracker] Skipping "${job.title}" — status "${status}" not valid from current "${current}"`);
-          return;
-        }
-        console.log(`[Job Tracker] Matched job "${job.title}" at "${job.company}" → updating status to ${status}`);
-        job.status = status;
-        job.statusHistory = [...(job.statusHistory || []), { status, date: today, createdAt: new Date().toISOString() }];
-        changed = true;
-      }
+      job.status = status;
+      job.statusHistory = [...(job.statusHistory || []), { status, date: today, createdAt: new Date().toISOString() }];
+      changed = true;
     });
     if (changed) {
       chrome.storage.local.set({ jobs });
