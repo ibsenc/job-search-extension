@@ -171,9 +171,10 @@ function checkOpenedEmails() {
       score: analysis.score,
       matches: analysis.matches,
     });
-    if (analysis.classification === 'neutral') return;
 
     processedMessageIds.add(messageId);
+    if (analysis.classification === 'neutral') return;
+
     const STATUS_MAP = { offer: 'Offer', interview: 'Interview', rejection: 'Rejected' };
     const status = STATUS_MAP[analysis.classification];
     console.log(`[Job Tracker] Sending status update → ${status} for domain: ${domain}`);

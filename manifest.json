@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Job Search Tracker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Tracks job applications automatically and monitors email responses.",
 
   "permissions": ["storage", "activeTab", "tabs"],
