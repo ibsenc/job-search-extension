@@ -67,6 +67,7 @@ function rootDomain(hostname) {
 const ATS_DOMAINS = new Set([
   'myworkday.com', 'workdayjobs.com', 'greenhouse.io', 'lever.co',
   'jobvite.com', 'icims.com', 'smartrecruiters.com', 'taleo.net',
+  'ashbyhq.com',
 ]);
 
 // Derives the brand from sender email address.

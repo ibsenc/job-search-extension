@@ -35,6 +35,8 @@ const EMAIL_PATTERNS = {
     /\bnot (?:the right |a )?fit\b/i,
     /\bdoes not meet\b/i,
     /\bdoesn'?t meet\b/i,
+    // not selected patterns
+    /\bnot (?:been )?selected for the next\b/i,
     // pursue / keep on file soft rejections
     /\bpursue other\b/i,
     /\bkeep your (?:resume|application|profile) on file\b/i,
