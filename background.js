@@ -70,15 +70,31 @@ const ATS_DOMAINS = new Set([
   'ashbyhq.com',
 ]);
 
+// Generic email local-parts that don't identify a specific company.
+// When an ATS email comes from one of these (e.g. jobs@ashbyhq.com), the
+// local-part would match unrelated job URLs (e.g. "jobs" matches every
+// jobs.ashbyhq.com URL), so we treat the company as unidentifiable.
+const GENERIC_SENDER_LOCALS = new Set([
+  'noreply', 'no-reply', 'donotreply', 'do-not-reply',
+  'notifications', 'mail', 'info', 'hello', 'team',
+  'recruiting', 'hr', 'support', 'careers', 'talent',
+  'jobs', 'apply', 'applications',
+]);
+
 // Derives the brand from sender email address.
-// For ATS senders, the brand is the local-part (e.g. "zoom" from zoom@myworkday.com).
+// For ATS senders, the brand is the local-part (e.g. "zoom" from zoom@myworkday.com),
+// unless that local-part is too generic to identify a company (returns null brand).
 // For normal senders, the brand is the first label of the root domain (e.g. "clever" from no-reply@clever.com).
 function getSenderBrand(domain, senderEmail) {
   const senderRoot = rootDomain(domain);
-  const atsBrand = ATS_DOMAINS.has(senderRoot) && senderEmail
-    ? senderEmail.split('@')[0].toLowerCase()
-    : null;
-  return { brand: atsBrand ?? senderRoot.split('.')[0].toLowerCase(), isAts: !!atsBrand };
+  if (!ATS_DOMAINS.has(senderRoot)) {
+    return { brand: senderRoot.split('.')[0].toLowerCase(), isAts: false };
+  }
+  const local = senderEmail ? senderEmail.split('@')[0].toLowerCase() : null;
+  if (!local || GENERIC_SENDER_LOCALS.has(local)) {
+    return { brand: null, isAts: true };
+  }
+  return { brand: local, isAts: true };
 }
 
 // Determines whether a saved job matches the sender of an email.
@@ -118,7 +134,11 @@ function updateJobByDomain(domain, status, senderEmail) {
     let changed = false;
     const today = new Date().toLocaleDateString('en-CA');
     const senderContext = getSenderBrand(domain, senderEmail);
-    console.log(`[Job Tracker] Attempting to find a job matching sender ${senderContext.brand}."`);
+    if (!senderContext.brand) {
+      console.log(`[Job Tracker] Skipping — "${senderEmail}" is a generic ATS address with no identifiable company brand`);
+      return;
+    }
+    console.log(`[Job Tracker] Attempting to find a job matching sender "${senderContext.brand}".`);
 
     jobs.forEach(job => {
       const matchStrategy = jobMatchesSender(job, domain, senderContext);

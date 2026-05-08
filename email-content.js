@@ -179,7 +179,7 @@ function checkOpenedEmails() {
 
     const STATUS_MAP = { offer: 'Offer', interview: 'Interview', rejection: 'Rejected' };
     const status = STATUS_MAP[analysis.classification];
-    console.log(`[Job Tracker] Sending status update → ${status} for domain: ${domain}`);
+    console.log(`[Job Tracker] Attempting status update → ${status} for domain: ${domain}. Update will occur if a matching job is found.`);
 
     try {
       chrome.runtime.sendMessage({ action: 'updateJobStatus', domain, senderEmail, status });
