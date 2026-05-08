@@ -1,7 +1,6 @@
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === 'saveJob') {
-    saveJob(message.job);
-    sendResponse({ success: true });
+    saveJob(message.job, () => sendResponse({ success: true }));
 
   } else if (message.action === 'getJobs') {
     chrome.storage.local.get(['jobs'], (result) => {
@@ -10,12 +9,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
 
   } else if (message.action === 'editJob') {
-    editJob(message.job);
-    sendResponse({ success: true });
+    editJob(message.job, () => sendResponse({ success: true }));
 
   } else if (message.action === 'deleteJob') {
-    deleteJob(message.id);
-    sendResponse({ success: true });
+    deleteJob(message.id, () => sendResponse({ success: true }));
 
   } else if (message.action === 'updateJobStatus') {
     updateJobByDomain(message.domain, message.status, message.senderEmail);
@@ -25,7 +22,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true;
 });
 
-function saveJob(job) {
+function saveJob(job, callback) {
   chrome.storage.local.get(['jobs'], (result) => {
     const jobs = result.jobs || [];
     const existingIndex = jobs.findIndex(j => j.url === job.url);
@@ -35,25 +32,27 @@ function saveJob(job) {
       job.id = job.id || crypto.randomUUID();
       jobs.push(job);
     }
-    chrome.storage.local.set({ jobs });
+    chrome.storage.local.set({ jobs }, callback);
   });
 }
 
-function editJob(updated) {
+function editJob(updated, callback) {
   chrome.storage.local.get(['jobs'], (result) => {
     const jobs = result.jobs || [];
     const idx = jobs.findIndex(j => j.id === updated.id);
     if (idx >= 0) {
       jobs[idx] = { ...jobs[idx], ...updated };
-      chrome.storage.local.set({ jobs });
+      chrome.storage.local.set({ jobs }, callback);
+    } else if (callback) {
+      callback();
     }
   });
 }
 
-function deleteJob(id) {
+function deleteJob(id, callback) {
   chrome.storage.local.get(['jobs'], (result) => {
     const jobs = (result.jobs || []).filter(j => j.id !== id);
-    chrome.storage.local.set({ jobs });
+    chrome.storage.local.set({ jobs }, callback);
   });
 }
 
