@@ -15,7 +15,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     deleteJob(message.id, () => sendResponse({ success: true }));
 
   } else if (message.action === 'updateJobStatus') {
-    updateJobByDomain(message.domain, message.status, message.senderEmail);
+    updateJobByDomain(message.domain, message.status, message.senderEmail, message.receivedDate);
     sendResponse({ success: true });
   }
 
@@ -127,11 +127,11 @@ function jobMatchesSender(job, domain, { brand, isAts }) {
 // Called by email-content.js when a reply from a known company is detected.
 // Iterates all saved jobs, delegates matching to jobMatchesSender, and applies
 // the status transition if valid.
-function updateJobByDomain(domain, status, senderEmail) {
+function updateJobByDomain(domain, status, senderEmail, receivedDate) {
   chrome.storage.local.get(['jobs'], (result) => {
     const jobs = result.jobs || [];
     let changed = false;
-    const today = new Date().toLocaleDateString('en-CA');
+    const today = receivedDate || new Date().toLocaleDateString('en-CA');
     const senderContext = getSenderBrand(domain, senderEmail);
     if (!senderContext.brand) {
       console.log(`[Job Tracker] Skipping — "${senderEmail}" is a generic ATS address with no identifiable company brand`);

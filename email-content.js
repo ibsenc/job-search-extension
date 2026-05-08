@@ -88,6 +88,8 @@ const PROVIDERS = [
     getSenderEmail: el => el.querySelector('[email]')?.getAttribute('email') ?? null,
     // .a3s is Gmail's internal class for the decoded message body
     getBodyEl: el => el.querySelector('.a3s'),
+    // .g3 is Gmail's date span; its title attribute holds the full datetime string
+    getReceivedDate: el => el.querySelector('.g3')?.getAttribute('title') ?? null,
   },
   {
     name: 'yahoo',
@@ -103,6 +105,7 @@ const PROVIDERS = [
       return a ? a.href.slice(7) : null; // strip "mailto:"
     },
     getBodyEl: el => el,
+    getReceivedDate: _el => document.querySelector('time[datetime]')?.getAttribute('datetime') ?? null,
   },
   {
     name: 'outlook',
@@ -116,6 +119,7 @@ const PROVIDERS = [
       return el?.getAttribute('data-hovercard-id') ?? el?.title ?? null;
     },
     getBodyEl: el => el.querySelector('[role="document"]') ?? el,
+    getReceivedDate: el => el.querySelector('time[datetime]')?.getAttribute('datetime') ?? null,
   },
 ];
 
@@ -179,10 +183,17 @@ function checkOpenedEmails() {
 
     const STATUS_MAP = { offer: 'Offer', interview: 'Interview', rejection: 'Rejected' };
     const status = STATUS_MAP[analysis.classification];
-    console.log(`[Job Tracker] Attempting status update → ${status} for domain: ${domain}. Update will occur if a matching job is found.`);
+
+    const rawDate = provider.getReceivedDate(container);
+    const parsedDate = rawDate ? new Date(rawDate) : null;
+    const receivedDate = (parsedDate && !isNaN(parsedDate))
+      ? parsedDate.toLocaleDateString('en-CA')
+      : new Date().toLocaleDateString('en-CA');
+
+    console.log(`[Job Tracker] Attempting status update → ${status} for domain: ${domain} (received: ${receivedDate}). Update will occur if a matching job is found.`);
 
     try {
-      chrome.runtime.sendMessage({ action: 'updateJobStatus', domain, senderEmail, status });
+      chrome.runtime.sendMessage({ action: 'updateJobStatus', domain, senderEmail, status, receivedDate });
     } catch (e) {
       observer.disconnect();
     }
